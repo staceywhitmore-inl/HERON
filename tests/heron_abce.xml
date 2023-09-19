@@ -1,0 +1,241 @@
+<HERON>
+
+  <Case name="abce">
+    <mode>sweep</mode>
+    <workflow>ABCE</workflow>
+    <economics>
+      <policies>
+        <CTAX>
+          <enabled>True</enabled>
+          <qty>60</qty>
+        </CTAX>
+        <PTC>
+          <enabled>False</enabled>
+          <eligibility>
+            <unit_type>conventional_nuclear, wind, solar</unit_type>
+          </eligibility>
+          <qty>15.0</qty>
+        </PTC>
+      </policies>
+      <allowed_xtr_types>wind, solar, ngcc, ngct, advanced_nuclear</allowed_xtr_types>
+    </economics>
+    <dispatcher>
+      <abce>
+        <location>/mnt/c/Users/WHITSR3/source/repos/_INL_Projects/abce/run.py</location>
+        <settings_file>/mnt/c/Users/WHITSR3/source/repos/_INL_Projects/abce/settings.yml</settings_file>
+        <inputs_path>/mnt/c/Users/WHITSR3/source/repos/_INL_Projects/abce/inputs</inputs_path>
+        <num_dispatch_years>10</num_dispatch_years>
+        <num_repdays>20</num_repdays>
+        <hist_wt>0.4</hist_wt>
+        <hist_decay>0.5</hist_decay>
+        <agent_opt>
+          <consider_future_projects>True</consider_future_projects>
+          <num_future_periods_considered>4</num_future_periods_considered>
+          <max_type_rets_per_pd>3</max_type_rets_per_pd>
+          <max_type_newbuilds_per_pd>5</max_type_newbuilds_per_pd>
+          <shortage_protection_period>8</shortage_protection_period>
+          <cap_decrease_threshold>1.05</cap_decrease_threshold>
+          <cap_decrease_margin>-0.2</cap_decrease_margin>
+          <cap_maintain_threshold>1.0</cap_maintain_threshold>
+          <cap_maintain_margin>0.0</cap_maintain_margin>
+          <cap_increase_margin>0.02</cap_increase_margin>
+          <profit_lamda>1.0</profit_lamda>
+          <credit_rating_lamda>0.1</credit_rating_lamda>
+          <cr_horizon>6</cr_horizon>
+          <int_bound>5.0</int_bound>
+        </agent_opt>
+      </abce>
+    </dispatcher>
+  </Case>
+
+
+  <Components>
+  <Component name="wind">
+      <produces resource="electricity" dispatch="independent">
+        <capacity resource="electricity">
+          <CSV variable="WindShape">wind_hourly</CSV>
+        <multiplier>0</multiplier>
+      </capacity>
+    </produces>
+    <economics>
+      <lifetime>5</lifetime>
+      <!-- <CashFlow name="capex" type="one-time" taxable="True" inflation="none" mult_target="False">
+        <driver>
+          <variable>wind_capacity</variable>
+        </driver>
+        <reference_price>
+          <fixed_value>-1.47e8</fixed_value>
+        </reference_price>
+      </CashFlow> -->
+    </economics>
+  </Component>
+
+  <Component name="advanced_nuclear">
+    <produces resource="electricity" dispatch="independent">
+      <capacity resource="electricity">
+        <sweep_values debug_value="10">0, 20, 40, 60</sweep_values>
+      </capacity>
+    </produces>
+    <economics>
+      <lifetime>10</lifetime>
+      <!-- construction cost -->
+      <CashFlow name="capex" type="one-time" taxable="True" inflation="none" mult_target="False">
+        <driver>
+          <variable>npp_capacity</variable>
+        </driver>
+        <reference_price>
+          <fixed_value>-3e8</fixed_value>
+        </reference_price>
+      </CashFlow>
+      <CashFlow name="var_OM" type="repeating" taxable='True' inflation='none' mult_target='False'>
+        <driver>
+          <activity>electricity</activity>
+          <multiplier>-1</multiplier>
+        </driver>
+        <reference_price>
+          <!-- ballpark $/MWh -->
+          <fixed_value>13e3</fixed_value>
+        </reference_price>
+      </CashFlow>
+    </economics>
+  </Component>
+
+  <Component name="ngcc">
+
+    <produces resource="electricity" dispatch="independent">
+      <capacity resource="electricity">
+        <opt_bounds>10, 40</opt_bounds> <!--GW-->
+      </capacity>
+    </produces>
+
+    <economics>
+      <lifetime>10</lifetime>
+      <!-- construction cost -->
+      <CashFlow name="capex" type="one-time" taxable="True" inflation="none" mult_target="False">
+        <driver>
+          <variable>ngcc_capacity</variable>
+        </driver>
+        <reference_price>
+          <!-- 1000 $/kW * 1e6 kW/GW = 1e9 est cost for 1 GW NGCC -->
+          <fixed_value>-1e8</fixed_value>
+        </reference_price>
+      </CashFlow>
+
+      <CashFlow name="fixed_OM" type="repeating" period="year" taxable="True" inflation="none" mult_target="False">
+        <driver>
+          <variable>pem_capacity</variable>
+        </driver>
+        <reference_price>
+          <fixed_value>-47.9</fixed_value> <!-- $/kW -->
+        </reference_price>
+      </CashFlow>
+
+      <CashFlow name="var_OM" type="repeating" period="hour" taxable='True' inflation='none' mult_target='False'>
+        <driver>
+          <activity>electricity</activity>
+          <multiplier>-1</multiplier>
+        </driver>
+        <reference_price>
+          <!-- ballpark $25/MWh -->
+          <fixed_value>25e3</fixed_value>
+        </reference_price>
+      </CashFlow>
+    </economics>
+  </Component>
+
+  <Component name="ngct">
+
+    <produces resource="electricity" dispatch="independent">
+      <capacity resource="electricity">
+        <opt_bounds>10, 40</opt_bounds> <!--GW-->
+      </capacity>
+    </produces>
+
+    <economics>
+      <lifetime>10</lifetime>
+      <!-- construction cost -->
+      <CashFlow name="capex" type="one-time" taxable="True" inflation="none" mult_target="False">
+        <driver>
+          <variable>ngct_capacity</variable>
+        </driver>
+        <reference_price>
+          <!-- 1000 $/kW * 1e6 kW/GW = 1e9 est cost for 1 GW NGCC -->
+          <fixed_value>-1e8</fixed_value>
+        </reference_price>
+      </CashFlow>
+
+      <CashFlow name="var_OM" type="repeating" taxable='True' inflation='none' mult_target='False'>
+        <driver>
+          <activity>electricity</activity>
+          <multiplier>-1</multiplier>
+        </driver>
+        <reference_price>
+          <!-- ballpark $25/MWh -->
+          <fixed_value>25e3</fixed_value>
+        </reference_price>
+      </CashFlow>
+    </economics>
+  </Component>
+
+  <Component name="solar">
+    <produces resource="electricity" dispatch="independent">
+      <capacity resource="electricity">
+        <CSV variable="SolarShape">pv_hourly</CSV>
+      <multiplier>0</multiplier>
+    </capacity>
+  </produces>
+  <economics>
+    <lifetime>5</lifetime>
+    <!-- construction cost -->
+    <CashFlow name="capex" type="one-time" taxable="True" inflation="none" mult_target="False">
+      <driver>
+        <variable>solar_capacity</variable>
+      </driver>
+      <reference_price>
+        <fixed_value>-1.47e8</fixed_value>
+      </reference_price>
+    </CashFlow>
+  </economics>
+</Component>
+
+  <!-- <Component name="grid">
+    <demands resource="electricity" dispatch="fixed">
+      <capacity>
+        <CSV variable="LoadShape">load_hourly</CSV>
+        <multiplier>-1</multiplier>
+      </capacity>
+    </demands>
+    <economics>
+      <lifetime>1</lifetime>
+      <CashFlow name="e_sales" type="repeating" taxable='True' inflation='none' mult_target='False'>
+        <driver>
+          <activity>electricity</activity>
+          <multiplier>-1</multiplier>
+        </driver>
+        <reference_price>
+          <fixed_value>50e3</fixed_value>
+        </reference_price>
+      </CashFlow>
+    </economics>
+  </Component> -->
+
+</Components>
+
+
+  <DataGenerators>
+    <CSV name='reg_hourly' variable="ReqReg">/mnt/c/Users/WHITSR3/source/repos/_INL_Projects/abce/inputs/ts_data/timeseries_reg_hourly.csv</CSV>
+    <CSV name='spin_hourly' variable="ReqSR">/mnt/c/Users/WHITSR3/source/repos/_INL_Projects/abce/inputs/ts_data/timeseries_spin_hourly.csv</CSV>
+    <CSV name='nspin_hourly' variable="ReqNSR">/mnt/c/Users/WHITSR3/source/repos/_INL_Projects/abce/inputs/ts_data/timeseries_nspin_hourly.csv</CSV>
+    <CSV name='load_hourly' variable="LoadShape">/mnt/c/Users/WHITSR3/source/repos/_INL_Projects/abce/inputs/ts_data/timeseries_load_hourly.csv</CSV>
+    <CSV name='wind_hourly' variable="WindShape">/mnt/c/Users/WHITSR3/source/repos/_INL_Projects/abce/inputs/ts_data/timeseries_wind_hourly.csv</CSV>
+    <CSV name='pv_hourly' variable="SolarShape">/mnt/c/Users/WHITSR3/source/repos/_INL_Projects/abce/inputs/ts_data/timeseries_pv_hourly.csv</CSV>
+
+    <!-- <CSV name='reg_hourly' variable="ReqReg">/Users/jia.zhou/Library/CloudStorage/Box-Box/abce/inp3/ts_data/timeseries_reg_hourly.csv</CSV>
+    <CSV name='spin_hourly' variable="ReqSR">/Users/jia.zhou/Library/CloudStorage/Box-Box/abce/inp3/ts_data/timeseries_spin_hourly.csv</CSV>
+    <CSV name='nspin_hourly' variable="ReqNSR">/Users/jia.zhou/Library/CloudStorage/Box-Box/abce/inp3/ts_data/timeseries_nspin_hourly.csv</CSV>
+    <CSV name='load_hourly' variable="LoadShape">/Users/jia.zhou/Library/CloudStorage/Box-Box/abce/inp3/ts_data/timeseries_load_hourly.csv</CSV>
+    <CSV name='wind_hourly' variable="WindShape">/Users/jia.zhou/Library/CloudStorage/Box-Box/abce/inp3/ts_data/timeseries_wind_hourly.csv</CSV>
+    <CSV name='pv_hourly' variable="SolarShape">/Users/jia.zhou/Library/CloudStorage/Box-Box/abce/inp3/ts_data/timeseries_pv_hourly.csv</CSV> -->
+  </DataGenerators>
+
+</HERON>
